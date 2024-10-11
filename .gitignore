@@ -1,0 +1,13 @@
+.cache/
+auto-save-list/
+config/
+elpa/
+etc/
+org-persist/
+saves/
+var/
+.emacs.desktop
+.last-package-update-day
+*~
+projectile-bookmarks.eld
+recentf
