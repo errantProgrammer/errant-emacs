@@ -1,4 +1,5 @@
 .cache/
+.tutor/
 auto-save-list/
 config/
 elpa/
@@ -11,3 +12,5 @@ var/
 *~
 projectile-bookmarks.eld
 recentf
+# Archivo de configuracion para projectos personales
+projects.el
