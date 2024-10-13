@@ -5,12 +5,16 @@ config/
 elpa/
 etc/
 org-persist/
+persp-confs/
+save/
 saves/
 var/
 .emacs.desktop
 .last-package-update-day
 *~
 projectile-bookmarks.eld
+config.org_archive
 recentf
-# Archivo de configuracion para projectos personales
+projectile-bookmarks.eld
+# Archivo de de configuracion
 projects.el
