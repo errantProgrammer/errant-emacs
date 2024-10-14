@@ -95,7 +95,6 @@
 				    (bookmarks . "book")))
   :config
   (dashboard-setup-startup-hook)
-  ;; (setq dashboard-projects-display 'columns);; muestra los proyectos en columnas
   )
 
 (use-package diminish)
@@ -154,6 +153,13 @@
 		    :slant 'italic)
 (setq-default line-spacing 0.12)
 
+;; Usar UTF-8 de forma predeterminada
+(prefer-coding-system 'utf-8)
+(set-default-coding-systems 'utf-8)
+(set-terminal-coding-system 'utf-8)
+(set-keyboard-coding-system 'utf-8)
+(setq buffer-file-coding-system 'utf-8)
+
 (use-package toc-org
 :commands toc-org-enable
 :init (add-hook 'org-mode-hook 'toc-org-enable))
@@ -185,7 +191,8 @@
     "=" '(perspective-map :wk "Perspective") ;; Lists all the perspective keybindings
     "TAB TAB" '(comment-line :wk "Comment lines")
     ";" '(comment-region :wk "Comment or uncomment region")
-    "u" '(universal-argument :wk "Universal argument"))
+    "u" '(universal-argument :wk "Universal argument")
+    "a p" '(load-theme :wk "Toogle theme"))
   ;; find direct or file
   (errant/leader-keys
     "d" '(:ignore t :wk "Dired")
@@ -226,7 +233,7 @@
   ;; Lenguajes de edicion de texto
   ;; Org-mode
   (errant/leader-keys
-    "o m" '(org-mode :wk "Toggle org mode")
+    "o m" '(toc-org-mode :wk "Toggle org mode")
     "o t" '(toc-org-insert-toc :wk "Insert TOC")
     "o l" '(org-goto :wk "Search Heading Jump"))
   )
@@ -316,9 +323,10 @@
 	      ("s-p" . projectile-command-map)	   ; para mac-users
 	      ("C-c p" . projectile-command-map)) ; para windows o linux users
   :config
-  (when (file-exists-p "~/.emacs.d/projects.el")
-    (load-file "~/.emacs.d/projects.el"))
- )
+  (let ((projects-file (expand-file-name "projects.el" user-emacs-directory)))
+    (when (file-exists-p projects-file)
+      (load-file projects-file)))
+  )
 
 ;; Set up the visible bell
 (setq visible-bell t)
@@ -348,7 +356,6 @@
 (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
       doom-themes-enable-italic t) ; if nil, italics is universally disabled
 (load-theme 'doom-tokyo-night)
-
 )
 
 (use-package doom-modeline
