@@ -153,6 +153,45 @@
 		    :slant 'italic)
 (setq-default line-spacing 0.12)
 
+(setq lsp-log-io nil); Don't log everything = speed
+(setq lsp-keymap-prefix "C-c l")
+(setq lsp-restart 'auto-restart)
+(setq lsp-ui-sideline-show-diagnostics t)
+(setq lsp-ui-sideline-show-hover t)
+(setq lsp-ui-sideline-show-code-actions t)
+
+(use-package lsp-mode
+  :init
+  ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
+  (setq lsp-keymap-prefix "C-c l")
+  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
+         (c-mode . lsp);; soporte para C
+         (c++-mode . lsp);; soporte para C++
+         (html-mode . lsp);; Soporte para HTML
+         (css-mode . lsp);; Soporte para CSS
+         (typescript-mode . lsp);; Soporte para TypeScript
+         (json-mode . lsp);; Soporte para Json
+         (rust-mode . lsp);; Soporte para Rust
+         ;; if you want which-key integration
+         (lsp-mode . lsp-enable-which-key-integration))
+  :commands lsp)
+
+;; optionally
+(use-package lsp-ui
+  :ensure t
+  :commands lsp-ui-mode
+  :config
+  (setq lsp-ui-sideline-enable t)
+  (setq lsp-ui-doc-enable t)
+  (setq lsp-ui-peek-enable t)
+  (setq lsp-ui-imenu-enable t))
+;; if you are helm user
+;; (use-package helm-lsp :commands helm-lsp-workspace-symbol)
+;; if you are ivy user
+(use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
+(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+;; (use-package dap-LANGUAGE) to load the dap adapter for your language
+
 ;; Usar UTF-8 de forma predeterminada
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
@@ -174,6 +213,35 @@
 (eval-after-load 'org-indent '(diminish 'org-indent-mode))
 
 (require 'org-tempo)
+
+(use-package json-mode
+  :ensure t)
+
+(setq web-mode-markup-indent-offset 2)
+(setq web-mode-code-indent-offset 2)
+(setq web-mode-css-indent-offset 2)
+(use-package web-mode
+  :ensure t
+  :mode (("\\.js\\'" . web-mode)
+	 ("\\.jsx\\'" .  web-mode)
+	 ("\\.ts\\'" . web-mode)
+	 ("\\.tsx\\'" . web-mode)
+	 ("\\.html\\'" . web-mode))
+  :commands web-mode)
+
+(defun enable-minor-mode (my-pair)
+  "Enable minor mode if filename match the regexp.  MY-PAIR is a cons cell (regexp . minor-mode)."
+  (if (buffer-file-name)
+      (if (string-match (car my-pair) buffer-file-name)
+	  (funcall (cdr my-pair)))))
+
+(use-package prettier-js
+  :ensure t)
+(add-hook 'web-mode-hook #'(lambda ()
+                             (enable-minor-mode
+                              '("\\.jsx?\\'" . prettier-js-mode))
+			     (enable-minor-mode
+                              '("\\.tsx?\\'" . prettier-js-mode))))
 
 (use-package general
   :config
@@ -199,15 +267,9 @@
     "d d" '(dired :wk "Open dired")
     "d j" '(dired-jump :wk "Dired jump to current")
     "d n" '(neotree-dir :wk "Open directory in neotree")
-    "d p" '(peep-dired :wk "Peep-dired"))
-  ;; shell
-  (errant/leader-keys
-    "t" '(:ignore t :wk "Toggle")
-    "t e" '(eshell-toggle :wk "Toggle eshell")
-    "t f" '(flycheck-mode :wk "Toggle flycheck")
-    "t l" '(display-line-numbers-mode :wk "Toggle line numbers")
+    "d p" '(peep-dired :wk "Peep-dired")
     "m" '(neotree-toggle :wk "Toggle neotree file viewer")
-    "t v" '(vterm-toggle :wk "Toggle vterm"))
+    "t t" '(visual-line-mode :wk "Toggle truncated lines"))
   ;;  Projectile
   (errant/leader-keys
     "p" '(projectile-command-map :wk "Projectile"))
@@ -235,7 +297,30 @@
   (errant/leader-keys
     "o m" '(toc-org-mode :wk "Toggle org mode")
     "o t" '(toc-org-insert-toc :wk "Insert TOC")
-    "o l" '(org-goto :wk "Search Heading Jump"))
+    "o l" '(org-goto :wk "Search Heading Jump")
+    "o r" '(rainbow-mode :wk "Toggle rainbow mode"))
+  ;; Windows
+  (errant/leader-keys "w" '(:ignore t :wk "Windows/Words")
+    ;; Window splits
+    "w c" '(evil-window-delete :wk "Close window")
+    "w n" '(evil-window-new :wk "New window")
+    "w s" '(evil-window-split :wk "Horizontal split window")
+    "w v" '(evil-window-vsplit :wk "Vertical split window")
+    ;; Window motions
+    "w h" '(evil-window-left :wk "Window left")
+    "w j" '(evil-window-down :wk "Window down")
+    "w k" '(evil-window-up :wk "Window up")
+    "w l" '(evil-window-right :wk "Window right")
+    "w w" '(evil-window-next :wk "Goto next window")
+    ;; Move Windows
+    "w H" '(buf-move-left :wk "Buffer move left")
+    "w J" '(buf-move-down :wk "Buffer move down")
+    "w K" '(buf-move-up :wk "Buffer move up")
+    "w L" '(buf-move-right :wk "Buffer move right")
+    ;; Words
+    "w d" '(downcase-word :wk "Downcase word")
+    "w u" '(upcase-word :wk "Upcase word")
+    "w =" '(count-words :wk "Count words/lines for buffer"))
   )
 
 (use-package which-key
@@ -328,6 +413,14 @@
       (load-file projects-file)))
   )
 
+(use-package rainbow-delimiters
+  :hook ((emacs-lisp-mode . rainbow-delimiters-mode)
+         (clojure-mode . rainbow-delimiters-mode)))
+
+(use-package rainbow-mode
+  :diminish
+  :hook org-mode prog-mode)
+
 ;; Set up the visible bell
 (setq visible-bell t)
 ;; Archivo de configuracion general
@@ -347,6 +440,10 @@
 (global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)
 (global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
 
+(setq ido-enable-flex-matching t)
+(setq ido-everywhere t)
+(ido-mode 1)
+
 (setq backup-directory-alist `(("." . "~/.emacs.d/save")))
 
 (setq custom-safe-themes t)
@@ -355,7 +452,7 @@
 :config
 (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
       doom-themes-enable-italic t) ; if nil, italics is universally disabled
-(load-theme 'doom-tokyo-night)
+(load-theme 'doom-nord)
 )
 
 (use-package doom-modeline
@@ -365,13 +462,13 @@
   (setq doom-modeline-height 35
 	doom-modeline-bar-width 5
 	doom-modeline-persp-name t
-	doom-modeline-persp-icon t))
+	doom-modeline-persp-icon t
+	doom-modeline-lsp-icon t)
   ;; (setq doom-mode-icon t)
   ;; (setq doom-modeline-buffer-state-icon t)
-  ;; (setq doom-modeline-lsp-icon t)
   ;; (setq doom-modeline-workspace-name t)
   ;; (setq doom-modeline-project-detection 'auto)
-  ;; )
+  )
 
 ;; Don’t compact font caches during GC.
 (setq inhibit-compacting-font-caches t)
@@ -391,5 +488,5 @@
 (fringe-mode '(8 . 8))
 
 ;; Transpariencia
-(set-frame-parameter (selected-frame) 'alpha '(95 . 95)) ;; Ajusta los valores para la transparencia
-(add-to-list 'default-frame-alist '(alpha . (95 . 95)))
+ (set-frame-parameter (selected-frame) 'alpha '(95 . 95)) ;; Ajusta los valores para la transparencia
+ (add-to-list 'default-frame-alist '(alpha . (95 . 95)))

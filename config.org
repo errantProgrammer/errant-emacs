@@ -17,7 +17,11 @@
 - [[#flycheck][Flycheck]]
 - [[#fonts][FONTS]]
 - [[#language-support][LANGUAGE SUPPORT]]
+  - [[#lsp-mode][Lsp-mode]]
   - [[#edicion][Edicion]]
+  - [[#json-mode][Json mode]]
+  - [[#web-mode][Web mode]]
+  - [[#typescript-con-react][Typescript con React]]
 - [[#general-keybindings][General Keybindings]]
 - [[#which--key][Which- Key]]
 - [[#ivy][IVY]]
@@ -25,6 +29,8 @@
 - [[#projectile][Projectile]]
   - [[#configuracion-de-projectile-para-almacenar-los-projectos][Configuracion de Projectile para almacenar los projectos]]
   - [[#configuracion-de-paquetes-de-projectile][Configuracion de paquetes de projectile]]
+- [[#rainbow-delimeters][Rainbow Delimeters]]
+- [[#rainbow-mode][Rainbow Mode]]
 - [[#configuracion-general][Configuracion General]]
   - [[#backup-files][Backup files]]
 - [[#theme][THEME]]
@@ -67,6 +73,8 @@ Los paquetes que se voy a estar utilizando son:
 #+end_src
 
 * Agregar directorio de script
+
+Cargando los archivos de configuración.
 #+begin_src emacs-lisp
 (let ((scripts-dir (expand-file-name "scripts" user-emacs-directory)))
   (add-to-list 'load-path scripts-dir)
@@ -248,7 +256,66 @@ Fuentes tipografia a usar van a ser las de Nerd font.
   (setq-default line-spacing 0.12)
 #+end_src
 
+# * Git Programs
+
+# ** Git timemachine
+# #+begin_src emacs-lisp
+# (use-package git-timemachine
+#   :after git-timemachine
+#   :hook (evil-normalize-keymaps . git-timemachine-hook)
+#   :config
+#     (evil-define-key 'normal git-timemachine-mode-map (kbd "C-j") 'git-timemachine-show-previous-revision)
+#     (evil-define-key 'normal git-timemachine-mode-map (kbd "C-k") 'git-timemachine-show-next-revision)
+# )
+# #+end_src
+
+# ** Magit
+# #+begin_src emacs-lisp
+# (use-package magit)
+# #+end_src
+
 * LANGUAGE SUPPORT
+** Lsp-mode
+#+begin_src emacs-lisp
+(setq lsp-log-io nil); Don't log everything = speed
+(setq lsp-keymap-prefix "C-c l")
+(setq lsp-restart 'auto-restart)
+(setq lsp-ui-sideline-show-diagnostics t)
+(setq lsp-ui-sideline-show-hover t)
+(setq lsp-ui-sideline-show-code-actions t)
+
+(use-package lsp-mode
+  :init
+  ;; set prefix for lsp-command-keymap (few alternatives - "C-l", "C-c l")
+  (setq lsp-keymap-prefix "C-c l")
+  :hook (;; replace XXX-mode with concrete major-mode(e. g. python-mode)
+         (c-mode . lsp);; soporte para C
+         (c++-mode . lsp);; soporte para C++
+         (html-mode . lsp);; Soporte para HTML
+         (css-mode . lsp);; Soporte para CSS
+         (typescript-mode . lsp);; Soporte para TypeScript
+         (json-mode . lsp);; Soporte para Json
+         (rust-mode . lsp);; Soporte para Rust
+         ;; if you want which-key integration
+         (lsp-mode . lsp-enable-which-key-integration))
+  :commands lsp)
+
+;; optionally
+(use-package lsp-ui
+  :ensure t
+  :commands lsp-ui-mode
+  :config
+  (setq lsp-ui-sideline-enable t)
+  (setq lsp-ui-doc-enable t)
+  (setq lsp-ui-peek-enable t)
+  (setq lsp-ui-imenu-enable t))
+;; if you are helm user
+;; (use-package helm-lsp :commands helm-lsp-workspace-symbol)
+;; if you are ivy user
+(use-package lsp-ivy :commands lsp-ivy-workspace-symbol)
+(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+;; (use-package dap-LANGUAGE) to load the dap adapter for your language
+#+end_src
 
 Emacs provee soporte a mucho lenguaje de programacion, pero para algunos mas recientes, es
 necesario instalarlo dependiendo lo que necesitemos
@@ -258,7 +325,7 @@ Lenguajes de edicion, en emacs se puede tener multiples archivos de edicion como
 - latex
 - markdown
   
-*** ORG MODE
+** ORG MODE
 
 #+begin_src emacs-lisp
 ;; Usar UTF-8 de forma predeterminada
@@ -268,7 +335,7 @@ Lenguajes de edicion, en emacs se puede tener multiples archivos de edicion como
 (set-keyboard-coding-system 'utf-8)
 (setq buffer-file-coding-system 'utf-8)
 #+end_src
-**** TOC
+*** TOC
 
 Habilitar el table of contents
 #+begin_src emacs-lisp
@@ -276,7 +343,7 @@ Habilitar el table of contents
   :commands toc-org-enable
   :init (add-hook 'org-mode-hook 'toc-org-enable))
 #+end_src
-**** Org bullets
+*** Org bullets
 
 #+begin_src emacs-lisp
   (add-hook 'org-mode-hook' 'org-ident-mode)
@@ -284,7 +351,7 @@ Habilitar el table of contents
   (add-hook 'org-mode-hook (lambda() (org-bullets-mode 1)))
 #+end_src
 
-**** Desabilitar electrict indet
+*** Desabilitar electrict indet
 
 #+begin_src emacs-lisp
 (electric-indent-mode 1)
@@ -322,198 +389,44 @@ ctrl + c  ctrl + ,
 #+begin_src emacs-lisp
 (require 'org-tempo)
 #+end_src
+** Json mode
 
-*** LATEX
-
-Latex es un lenguaje que nos permite realizar documentos de una manera mas elegante.
-La siguiente configuracion esta basada en Karthink.
-
-#+begin_src 
-;; AucTeX settings - almost no changes
-(use-package latex
-  :ensure auctex
-  :hook ((LaTeX-mode . prettify-symbols-mode))
-  :bind (:map LaTeX-mode-map
-         ("C-S-e" . latex-math-from-calc))
-  :config
-  ;; Format math as a Latex string with Calc
-  (defun latex-math-from-calc ()
-    "Evaluate `calc' on the contents of line at point."
-    (interactive)
-    (cond ((region-active-p)
-           (let* ((beg (region-beginning))
-                  (end (region-end))
-                  (string (buffer-substring-no-properties beg end)))
-             (kill-region beg end)
-             (insert (calc-eval `(,string calc-language latex
-                                          calc-prefer-frac t
-                                          calc-angle-mode rad)))))
-          (t (let ((l (thing-at-point 'line)))
-               (end-of-line 1) (kill-line 0) 
-               (insert (calc-eval `(,l
-                                    calc-language latex
-                                    calc-prefer-frac t
-                                    calc-angle-mode rad))))))))
-
-(use-package preview
-  :after latex
-  :hook ((LaTeX-mode . preview-larger-previews))
-  :config
-  (defun preview-larger-previews ()
-    (setq preview-scale-function
-          (lambda () (* 1.25
-                   (funcall (preview-scale-from-face)))))))
-
-;; CDLatex settings
-(use-package cdlatex
-  :ensure t
-  :hook (LaTeX-mode . turn-on-cdlatex)
-  :bind (:map cdlatex-mode-map 
-              ("<tab>" . cdlatex-tab)))
-
-;; Yasnippet settings
-(use-package yasnippet
-  :ensure t
-  :hook ((LaTeX-mode . yas-minor-mode)
-         (post-self-insert . my/yas-try-expanding-auto-snippets))
-  :config
-  (use-package warnings
-    :config
-    (cl-pushnew '(yasnippet backquote-change)
-                warning-suppress-types
-                :test 'equal))
-
-  (setq yas-triggers-in-field t)
-  
-  ;; Function that tries to autoexpand YaSnippets
-  ;; The double quoting is NOT a typo!
-  (defun my/yas-try-expanding-auto-snippets ()
-    (when (and (boundp 'yas-minor-mode) yas-minor-mode)
-      (let ((yas-buffer-local-condition ''(require-snippet-condition . auto)))
-        (yas-expand)))))
-
-;; CDLatex integration with YaSnippet: Allow cdlatex tab to work inside Yas
-;; fields
-(use-package cdlatex
-  :hook ((cdlatex-tab . yas-expand)
-         (cdlatex-tab . cdlatex-in-yas-field))
-  :config
-  (use-package yasnippet
-    :bind (:map yas-keymap
-           ("<tab>" . yas-next-field-or-cdlatex)
-           ("TAB" . yas-next-field-or-cdlatex))
-    :config
-    (defun cdlatex-in-yas-field ()
-      ;; Check if we're at the end of the Yas field
-      (when-let* ((_ (overlayp yas--active-field-overlay))
-                  (end (overlay-end yas--active-field-overlay)))
-        (if (>= (point) end)
-            ;; Call yas-next-field if cdlatex can't expand here
-            (let ((s (thing-at-point 'sexp)))
-              (unless (and s (assoc (substring-no-properties s)
-                                    cdlatex-command-alist-comb))
-                (yas-next-field-or-maybe-expand)
-                t))
-          ;; otherwise expand and jump to the correct location
-          (let (cdlatex-tab-hook minp)
-            (setq minp
-                  (min (save-excursion (cdlatex-tab)
-                                       (point))
-                       (overlay-end yas--active-field-overlay)))
-            (goto-char minp) t))))
-
-    (defun yas-next-field-or-cdlatex nil
-      (interactive)
-      "Jump to the next Yas field correctly with cdlatex active."
-      (if
-          (or (bound-and-true-p cdlatex-mode)
-              (bound-and-true-p org-cdlatex-mode))
-          (cdlatex-tab)
-        (yas-next-field-or-maybe-expand)))))
-
-;; Array/tabular input with org-tables and cdlatex 
-(use-package org-table
-  :after cdlatex
-  :bind (:map orgtbl-mode-map
-              ("<tab>" . lazytab-org-table-next-field-maybe)
-              ("TAB" . lazytab-org-table-next-field-maybe))
-  :init
-  (add-hook 'cdlatex-tab-hook 'lazytab-cdlatex-or-orgtbl-next-field 90)
-  ;; Tabular environments using cdlatex
-  (add-to-list 'cdlatex-command-alist '("smat" "Insert smallmatrix env"
-                                       "\\left( \\begin{smallmatrix} ? \\end{smallmatrix} \\right)"
-                                       lazytab-position-cursor-and-edit
-                                       nil nil t))
-  (add-to-list 'cdlatex-command-alist '("bmat" "Insert bmatrix env"
-                                       "\\begin{bmatrix} ? \\end{bmatrix}"
-                                       lazytab-position-cursor-and-edit
-                                       nil nil t))
-  (add-to-list 'cdlatex-command-alist '("pmat" "Insert pmatrix env"
-                                       "\\begin{pmatrix} ? \\end{pmatrix}"
-                                       lazytab-position-cursor-and-edit
-                                       nil nil t))
-  (add-to-list 'cdlatex-command-alist '("tbl" "Insert table"
-                                        "\\begin{table}\n\\centering ? \\caption{}\n\\end{table}\n"
-                                       lazytab-position-cursor-and-edit
-                                       nil t nil))
-  :config
-  ;; Tab handling in org tables
-  (defun lazytab-position-cursor-and-edit ()
-    ;; (if (search-backward "\?" (- (point) 100) t)
-    ;;     (delete-char 1))
-    (cdlatex-position-cursor)
-    (lazytab-orgtbl-edit))
-
-  (defun lazytab-orgtbl-edit ()
-    (advice-add 'orgtbl-ctrl-c-ctrl-c :after #'lazytab-orgtbl-replace)
-    (orgtbl-mode 1)
-    (open-line 1)
-    (insert "\n|"))
-
-  (defun lazytab-orgtbl-replace (_)
-    (interactive "P")
-    (unless (org-at-table-p) (user-error "Not at a table"))
-    (let* ((table (org-table-to-lisp))
-           params
-           (replacement-table
-            (if (texmathp)
-                (lazytab-orgtbl-to-amsmath table params)
-              (orgtbl-to-latex table params))))
-      (kill-region (org-table-begin) (org-table-end))
-      (open-line 1)
-      (push-mark)
-      (insert replacement-table)
-      (align-regexp (region-beginning) (region-end) "\\([:space:]*\\)& ")
-      (orgtbl-mode -1)
-      (advice-remove 'orgtbl-ctrl-c-ctrl-c #'lazytab-orgtbl-replace)))
-  
-  (defun lazytab-orgtbl-to-amsmath (table params)
-    (orgtbl-to-generic
-     table
-     (org-combine-plists
-      '(:splice t
-                :lstart ""
-                :lend " \\\\"
-                :sep " & "
-                :hline nil
-                :llend "")
-      params)))
-
-  (defun lazytab-cdlatex-or-orgtbl-next-field ()
-    (when (and (bound-and-true-p orgtbl-mode)
-               (org-table-p)
-               (looking-at "[[:space:]]*\\(?:|\\|$\\)")
-               (let ((s (thing-at-point 'sexp)))
-                 (not (and s (assoc s cdlatex-command-alist-comb)))))
-      (call-interactively #'org-table-next-field)
-      t))
-
-  (defun lazytab-org-table-next-field-maybe ()
-    (interactive)
-    (if (bound-and-true-p cdlatex-mode)
-        (cdlatex-tab)
-      (org-table-next-field))))
+#+begin_src emacs-lisp
+(use-package json-mode
+  :ensure t)
 #+end_src
+** Web mode
+#+begin_src emacs-lisp
+(setq web-mode-markup-indent-offset 2)
+(setq web-mode-code-indent-offset 2)
+(setq web-mode-css-indent-offset 2)
+(use-package web-mode
+  :ensure t
+  :mode (("\\.js\\'" . web-mode)
+	 ("\\.jsx\\'" .  web-mode)
+	 ("\\.ts\\'" . web-mode)
+	 ("\\.tsx\\'" . web-mode)
+	 ("\\.html\\'" . web-mode))
+  :commands web-mode)
+#+end_src
+** Typescript con React
+
+#+begin_src emacs-lisp
+(defun enable-minor-mode (my-pair)
+  "Enable minor mode if filename match the regexp.  MY-PAIR is a cons cell (regexp . minor-mode)."
+  (if (buffer-file-name)
+      (if (string-match (car my-pair) buffer-file-name)
+	  (funcall (cdr my-pair)))))
+
+(use-package prettier-js
+  :ensure t)
+(add-hook 'web-mode-hook #'(lambda ()
+                             (enable-minor-mode
+                              '("\\.jsx?\\'" . prettier-js-mode))
+			     (enable-minor-mode
+                              '("\\.tsx?\\'" . prettier-js-mode))))
+#+end_src
+
 
 * General Keybindings
 
@@ -542,15 +455,9 @@ La siguiente configuracion esta basada en Karthink.
     "d d" '(dired :wk "Open dired")
     "d j" '(dired-jump :wk "Dired jump to current")
     "d n" '(neotree-dir :wk "Open directory in neotree")
-    "d p" '(peep-dired :wk "Peep-dired"))
-  ;; shell
-  (errant/leader-keys
-    "t" '(:ignore t :wk "Toggle")
-    "t e" '(eshell-toggle :wk "Toggle eshell")
-    "t f" '(flycheck-mode :wk "Toggle flycheck")
-    "t l" '(display-line-numbers-mode :wk "Toggle line numbers")
+    "d p" '(peep-dired :wk "Peep-dired")
     "m" '(neotree-toggle :wk "Toggle neotree file viewer")
-    "t v" '(vterm-toggle :wk "Toggle vterm"))
+    "t t" '(visual-line-mode :wk "Toggle truncated lines"))
   ;;  Projectile
   (errant/leader-keys
     "p" '(projectile-command-map :wk "Projectile"))
@@ -578,7 +485,30 @@ La siguiente configuracion esta basada en Karthink.
   (errant/leader-keys
     "o m" '(toc-org-mode :wk "Toggle org mode")
     "o t" '(toc-org-insert-toc :wk "Insert TOC")
-    "o l" '(org-goto :wk "Search Heading Jump"))
+    "o l" '(org-goto :wk "Search Heading Jump")
+    "o r" '(rainbow-mode :wk "Toggle rainbow mode"))
+  ;; Windows
+  (errant/leader-keys "w" '(:ignore t :wk "Windows/Words")
+    ;; Window splits
+    "w c" '(evil-window-delete :wk "Close window")
+    "w n" '(evil-window-new :wk "New window")
+    "w s" '(evil-window-split :wk "Horizontal split window")
+    "w v" '(evil-window-vsplit :wk "Vertical split window")
+    ;; Window motions
+    "w h" '(evil-window-left :wk "Window left")
+    "w j" '(evil-window-down :wk "Window down")
+    "w k" '(evil-window-up :wk "Window up")
+    "w l" '(evil-window-right :wk "Window right")
+    "w w" '(evil-window-next :wk "Goto next window")
+    ;; Move Windows
+    "w H" '(buf-move-left :wk "Buffer move left")
+    "w J" '(buf-move-down :wk "Buffer move down")
+    "w K" '(buf-move-up :wk "Buffer move up")
+    "w L" '(buf-move-right :wk "Buffer move right")
+    ;; Words
+    "w d" '(downcase-word :wk "Downcase word")
+    "w u" '(upcase-word :wk "Upcase word")
+    "w =" '(count-words :wk "Count words/lines for buffer"))
   )
 #+end_src
 
@@ -736,6 +666,20 @@ Los puntos significan si se quiere buscar a 1 nivel de profundidad o a 2 niveles
 (define-key projectile-mode-map [?\s-g] 'projectile-grep)
 #+end_src
 
+* Rainbow Delimeters
+
+#+begin_src emacs-lisp
+(use-package rainbow-delimiters
+  :hook ((emacs-lisp-mode . rainbow-delimiters-mode)
+         (clojure-mode . rainbow-delimiters-mode)))
+#+end_src
+* Rainbow Mode
+#+begin_src emacs-lisp
+(use-package rainbow-mode
+  :diminish
+  :hook org-mode prog-mode)
+#+end_src
+
 * Configuracion General
 
 #+begin_src emacs-lisp
@@ -757,6 +701,10 @@ Los puntos significan si se quiere buscar a 1 nivel de profundidad o a 2 niveles
 (global-set-key (kbd "C--") 'text-scale-decrease)
 (global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)
 (global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
+
+(setq ido-enable-flex-matching t)
+(setq ido-everywhere t)
+(ido-mode 1)
 #+end_src
 
 ** Backup files
@@ -765,45 +713,6 @@ Los puntos significan si se quiere buscar a 1 nivel de profundidad o a 2 niveles
 (setq backup-directory-alist `(("." . "~/.emacs.d/save")))
 #+end_src
 
-# * Shelsl and terminals
-
-# ** Eshell
-
-# #+begin_src emacs-lisp
-# (use-package eshell-toggle
-#   :custom
-#   (eshell-toggle-size-fraction 3)
-#   (eshell-toggle-use-projectile-root t)
-#   (eshell-toggle-run-command nil)
-#   (eshell-toggle-init-function #'eshell-toggle-init-ansi-term))
-
-#   (use-package eshell-syntax-highlighting
-#     :after esh-mode
-#     :config
-#     (eshell-syntax-highlighting-global-mode +1))
-
-#   ;; eshell-syntax-highlighting -- adds fish/zsh-like syntax highlighting.
-#   ;; eshell-rc-script -- your profile for eshell; like a bashrc for eshell.
-#   ;; eshell-aliases-file -- sets an aliases file for the eshell.
-
-#   ;; (setq eshell-rc-script (concat user-emacs-directory "eshell/profile")
-#   ;;       eshell-aliases-file (concat user-emacs-directory "eshell/aliases")
-#   ;;       eshell-history-size 5000
-#   ;;       eshell-buffer-maximum-lines 5000
-#   ;;       eshell-hist-ignoredups t
-#   ;;       eshell-scroll-to-bottom-on-input t
-#   ;;       eshell-destroy-buffer-when-process-dies t
-#   ;;       eshell-visual-commands'("bash" "fish" "htop" "ssh" "top" "zsh"))
-# #+end_src
-
-# ** Vterm
-
-# #+begin_src emacs-lisp
-# (use-package vterm
-# :config
-# (setq shell-file-name "/bin/sh"
-#       vterm-max-scrollback 5000))
-# #+end_src
 
 * THEME
 Los temas van a venir del paquete doom-theme
@@ -814,28 +723,27 @@ Los temas van a venir del paquete doom-theme
   :config
   (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
 	doom-themes-enable-italic t) ; if nil, italics is universally disabled
-  (load-theme 'doom-tokyo-night)
+  (load-theme 'doom-nord)
   )
 #+end_src
 
 ** MODELINE
 
 #+begin_src emacs-lisp
-  (use-package doom-modeline
-    :ensure t
-    :init (doom-modeline-mode 1)
-    :config
-    (setq doom-modeline-height 35
-	  doom-modeline-bar-width 5
-	  doom-modeline-persp-name t
-	  doom-modeline-persp-icon t))
-    ;; (setq doom-mode-icon t)
-    ;; (setq doom-modeline-buffer-state-icon t)
-    ;; (setq doom-modeline-lsp-icon t)
-    ;; (setq doom-modeline-workspace-name t)
-    ;; (setq doom-modeline-project-detection 'auto)
-    ;; )
-
+(use-package doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1)
+  :config
+  (setq doom-modeline-height 35
+	doom-modeline-bar-width 5
+	doom-modeline-persp-name t
+	doom-modeline-persp-icon t
+	doom-modeline-lsp-icon t)
+  ;; (setq doom-mode-icon t)
+  ;; (setq doom-modeline-buffer-state-icon t)
+  ;; (setq doom-modeline-workspace-name t)
+  ;; (setq doom-modeline-project-detection 'auto)
+  )
 #+end_src
 
 ** CONFIGURACION EXTRA
@@ -865,8 +773,8 @@ icons
 ** Transpariencia
 
 #+begin_src emacs-lisp
-  ;; Transpariencia
-  (set-frame-parameter (selected-frame) 'alpha '(95 . 95)) ;; Ajusta los valores para la transparencia
-  (add-to-list 'default-frame-alist '(alpha . (95 . 95)))
+;; Transpariencia
+ (set-frame-parameter (selected-frame) 'alpha '(95 . 95)) ;; Ajusta los valores para la transparencia
+ (add-to-list 'default-frame-alist '(alpha . (95 . 95)))
 #+end_src
 
